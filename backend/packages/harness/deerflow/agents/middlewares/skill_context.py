@@ -15,10 +15,11 @@ from langchain_core.messages import AIMessage, AnyMessage, ToolMessage
 from deerflow.agents.thread_state import _SKILL_DESCRIPTION_MAX_CHARS, SkillEntry
 
 _SKILL_FILE_NAME = "SKILL.md"
-# `\ufeff` is the UTF-8 byte-order mark a Windows-saved SKILL.md can carry. The loader and
-# validator already tolerate it (see `deerflow.skills.frontmatter._FRONTMATTER_RE`); without it
-# here the match fails on the leading marker and the captured description comes back empty.
-_FRONT_MATTER_RE = re.compile(r"^\ufeff?---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+# Keep this pattern identical to `deerflow.skills.frontmatter._FRONTMATTER_RE`, which the loader
+# and validator use. `\ufeff` is the UTF-8 byte-order mark a Windows-saved SKILL.md can carry.
+# The newline after the closing fence is optional: a ranged read_file joins lines without a
+# trailing newline, so a read of just the front matter ends on `---`.
+_FRONT_MATTER_RE = re.compile(r"^\ufeff?---\s*\n(.*?)\n---\s*\n?", re.DOTALL)
 SKILL_CONTEXT_ENTRY_KEY = "skill_context_entry"
 # Stamped instead of SKILL_CONTEXT_ENTRY_KEY when the read SKILL.md belongs to
 # a skill whose action-scoped ``skill:activate`` decision is denied: the file

@@ -228,3 +228,16 @@ def test_structured_read_failures_never_register_usage(asynchronous, content, kw
     assert result.additional_kwargs["deerflow_tool_meta"]["status"] == "error"
     assert "skill_usage" not in result.additional_kwargs
     assert recorded == []
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+def test_ranged_read_ending_on_closing_fence_keeps_frontmatter(asynchronous):
+    # read_file joins a line range with "\n" and adds no trailing newline, so a
+    # read of just the front matter ends on the closing "---".
+    content = "---\nname: quarterly-report\ndescription: Summarize results.\n---"
+    message = read_result(content, args={"start_line": 1, "end_line": 4}, asynchronous=asynchronous)
+    assert message.additional_kwargs["skill_context_entry"]["description"] == "Summarize results."
+    usage = message.additional_kwargs["skill_usage"]
+    assert usage["name"] == "quarterly-report"
+    assert usage["description"] == "Summarize results."
+    assert usage["partial"] is True

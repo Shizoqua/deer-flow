@@ -1,3 +1,4 @@
+import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from deerflow.agents.middlewares.skill_context import (
@@ -5,6 +6,7 @@ from deerflow.agents.middlewares.skill_context import (
     extract_skills,
     render_skill_context,
 )
+from deerflow.skills.frontmatter import split_skill_markdown
 
 _ROOT = "/mnt/skills"
 _READ = frozenset({"read_file", "read", "view", "cat"})
@@ -67,6 +69,26 @@ class TestExtractSkills:
             "path": "/mnt/skills/public/data-analysis/SKILL.md",
             "description": "Analyze data with pandas and charts.",
         }
+
+    @pytest.mark.parametrize(
+        "content",
+        [
+            _SKILL_BODY,
+            f"\ufeff{_SKILL_BODY}",
+            _SKILL_BODY.replace("\n", "\r\n"),
+            # A ranged read_file ending on the closing fence has no trailing newline.
+            "---\nname: data-analysis\ndescription: Analyze data with pandas and charts.\n---",
+        ],
+    )
+    def test_description_matches_the_skill_loader_parser(self, content):
+        parts, error = split_skill_markdown(content)
+        assert error is None
+        entry = build_skill_entry_metadata_from_read(
+            "/mnt/skills/public/data-analysis/SKILL.md",
+            content,
+            skills_root=_ROOT,
+        )
+        assert entry["description"] == parts.metadata["description"]
 
     def test_captures_skill_reference_with_description(self):
         msgs = [
